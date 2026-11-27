@@ -18,9 +18,9 @@
    LAYOUT: mark top left, picture everywhere; scroll to travel, drag and tap to play */
 :root{color-scheme:light;--bg:#f4f1ea;--ink:#12151b;--mute:#565c6c}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:radial-gradient(120vmax 120vmax at 55% 50%,#fcfaf6 0,#f4f1ea 45%,#e8e3d8 100%) fixed var(--bg);color:var(--ink);font:300 17px/1.6 Sora,"Helvetica Neue",Arial,sans-serif;overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:300 17px/1.6 Sora,"Helvetica Neue",Arial,sans-serif;overflow-x:clip}
 .track{height:560vh}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(120vmax 120vmax at 55% 50%,#fcfaf6 0,#f4f1ea 45%,#e8e3d8 100%);touch-action:pan-y;cursor:grab}
 canvas.drag{cursor:grabbing}
 .page{position:fixed;top:0;left:0;padding:clamp(22px,4vw,48px) max(5vw,20px);pointer-events:none}
 .mark{display:flex;align-items:center;gap:14px;font-weight:400;font-size:18px;letter-spacing:.02em}
@@ -53,7 +53,7 @@ const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const tints=['36,64,216','22,26,33','140,163,234','36,64,216','70,100,225'],B='255,74,31';
 const SL=new Path2D('M2 80h16L46 0H30Z'),EE=new Path2D('M52 0h48v14H66v19h28v14H66v19h34v14H52Z');
 let W=0,H=0,D=1,F={x:0,y:0},aim={x:0,y:0},home={x:0,y:0},T=[],P=[],ST=[],pr=3;
-let ptr={x:-9999,y:-9999,on:0},drag=null,rip=[],boost=0,ps=0,now=0,last=0;
+let ptr={x:-9999,y:-9999,on:0},drag=null,rip=[],boost=0,ps=0,now=0,last=0,sph=0,bph=0;
 const bd=(()=>{const l=Math.hypot(28,80);return{x:28/l,y:-80/l}})(),bAng=Math.atan2(bd.y,bd.x);
 let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const ss=(a,b,v)=>{const t=Math.min(1,Math.max(0,(v-a)/(b-a)));return t*t*(3-2*t)},mix=(a,b,t)=>a+(b-a)*t;
@@ -83,7 +83,7 @@ function frame(ms){
   ps=still?pt:ps+(pt-ps)*(1-Math.exp(-dt*7));if(Math.abs(pt-ps)<.0004)ps=pt;
   const c=ss(0,.26,ps),warp=ss(.3,.6,ps),f=ss(.58,.9,ps),la=1-ss(.55,.78,ps),z=1+warp*warp*5;
   const ease=1-Math.exp(-dt*(drag?12:2.6));F.x+=(aim.x-F.x)*ease;F.y+=(aim.y-F.y)*ease;boost*=Math.exp(-dt*3.7);
-  cue.style.opacity=1-ss(0,.04,ps);bar.style.transform=`scaleY(${ps})`;
+  sph+=dt*(.3+warp*1.6);bph+=dt*(.22+warp*.9);cue.style.opacity=1-ss(0,.04,ps);bar.style.transform=`scaleY(${ps})`;
   x.setTransform(D,0,0,D,0,0);x.globalAlpha=1;
   x.clearRect(0,0,W,H);
   x.lineCap='round';
@@ -107,7 +107,7 @@ function frame(ms){
     }
     x.restore();
     if(warp>.02){const M=Math.max(W,H);x.globalAlpha=la;
-      for(const s of ST){const u=((s.o+time*s.v*(.3+warp*1.6))%1),d=u*u*M,len=warp*90*u+2,ca=Math.cos(s.a),sa=Math.sin(s.a);
+      for(const s of ST){const u=((s.o+sph*s.v)%1),d=u*u*M,len=warp*90*u+2,ca=Math.cos(s.a),sa=Math.sin(s.a);
         x.strokeStyle=`rgba(${tints[s.g]},${warp*u*.8})`;x.lineWidth=1+u*1.4;x.beginPath();x.moveTo(F.x+ca*d,F.y+sa*d);x.lineTo(F.x+ca*(d+len),F.y+sa*(d+len));x.stroke()}}
   }
   x.globalAlpha=1;rip=rip.filter(r=>time-r.t<1.6);
@@ -118,11 +118,12 @@ function frame(ms){
     for(const[w,a]of[[26,.05],[10,.12],[2.4,.95]]){const g=x.createLinearGradient(F.x,F.y,ex,ey);
       g.addColorStop(0,`rgba(${B},${a})`);g.addColorStop(.6,`rgba(${B},${a*.5})`);g.addColorStop(1,`rgba(${B},0)`);
       x.strokeStyle=g;x.lineWidth=w*pulse;x.beginPath();x.moveTo(F.x,F.y);x.lineTo(ex,ey);x.stroke()}
-    for(let i=0;i<5;i++){const u=((time*(.22+warp*.9)+i/5)%1);x.fillStyle=`rgba(${B},${.9*(1-u)})`;x.beginPath();x.arc(F.x+bd.x*L*u*.8,F.y+bd.y*L*u*.8,2.6-u*1.6,0,6.29);x.fill()}
+    for(let i=0;i<5;i++){const u=((bph+i/5)%1);x.fillStyle=`rgba(${B},${.9*(1-u)})`;x.beginPath();x.arc(F.x+bd.x*L*u*.8,F.y+bd.y*L*u*.8,2.6-u*1.6,0,6.29);x.fill()}
     const R=Math.min(W,H)*.2*pulse,ng=x.createRadialGradient(F.x,F.y,0,F.x,F.y,R);
     ng.addColorStop(0,`rgba(${B},.95)`);ng.addColorStop(.08,`rgba(${B},.5)`);ng.addColorStop(.4,`rgba(${B},.1)`);ng.addColorStop(1,`rgba(${B},0)`);
     x.fillStyle=ng;x.beginPath();x.arc(F.x,F.y,R,0,6.29);x.fill();
   }
+  x.globalAlpha=1;
   if(f>.001){
     const M=Math.max(W,H),RR=Math.min(W,H)*.16,bk={};
     for(const q of P){
